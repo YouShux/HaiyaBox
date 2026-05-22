@@ -155,25 +155,24 @@ public sealed class GitHubAutoUpdater : IDisposable
 
         foreach (var entry in doc.Descendants(AtomNs + "entry"))
         {
-            var title = entry.Element(AtomNs + "title")?.Value;
-            if (string.IsNullOrWhiteSpace(title)) continue;
+            var id = entry.Element(AtomNs + "id")?.Value;
+            if (string.IsNullOrWhiteSpace(id)) continue;
 
-            var publishedStr = entry.Element(AtomNs + "published")?.Value;
-            DateTimeOffset.TryParse(publishedStr, out var published);
+            var tagName = id[(id.LastIndexOf('/') + 1)..];
+            if (string.IsNullOrWhiteSpace(tagName)) continue;
 
-            var isPrerelease = title.StartsWith("dev-", StringComparison.OrdinalIgnoreCase);
-            if (!Settings.IncludePrerelease && isPrerelease) continue;
+            DateTimeOffset.TryParse(entry.Element(AtomNs + "published")?.Value, out var published);
 
             var asset = new GitHubAsset
             {
-                Name = $"{PackagePrefix}{title}{PackageExtension}",
-                BrowserDownloadUrl = $"https://github.com/{Owner}/{Repo}/releases/download/{title}/{PackagePrefix}{title}{PackageExtension}"
+                Name = $"{PackagePrefix}{tagName}{PackageExtension}",
+                BrowserDownloadUrl = $"https://github.com/{Owner}/{Repo}/releases/download/{tagName}/{PackagePrefix}{tagName}{PackageExtension}"
             };
 
             return new GitHubRelease
             {
-                TagName = title,
-                Prerelease = isPrerelease,
+                TagName = tagName,
+                Prerelease = true,
                 PublishedAt = published,
                 Assets = [asset]
             };
